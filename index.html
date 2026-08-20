@@ -3,6 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#18352d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <title>Kalorien-Scanner | kalorio</title>
   <style>
     :root {
@@ -700,6 +705,14 @@
     };
     input.onchange = event => load(event.target.files[0]);
     $("reset").onclick = () => location.reload();
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js", { scope: "./" }).catch(error => {
+          console.error("Service Worker konnte nicht registriert werden.", error);
+        });
+      });
+    }
   </script>
 </body>
 </html>
