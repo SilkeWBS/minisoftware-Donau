@@ -288,6 +288,32 @@
       padding: 8px;
     }
 
+    .remaining {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .remaining-card {
+      background: #f8fbf8;
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+
+    .remaining-card b {
+      display: block;
+      font-size: 22px;
+      margin-top: 4px;
+    }
+
+    .remaining-card small {
+      display: block;
+      color: #839088;
+      font-size: 10px;
+      letter-spacing: .3px;
+    }
+
     .macros {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -460,6 +486,10 @@
       .macros {
         grid-template-columns: 1fr;
       }
+
+      .remaining {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -504,6 +534,17 @@
           <strong id="total">711</strong> <b>kcal</b>
         </div>
         <div class="circle" id="percent">36%</div>
+      </div>
+
+      <div class="remaining">
+        <div class="remaining-card">
+          <small>RESTKALORIEN MANN · 2.500 KCAL/TAG</small>
+          <b id="maleRemaining">1.789 kcal</b>
+        </div>
+        <div class="remaining-card">
+          <small>RESTKALORIEN FRAU · 2.000 KCAL/TAG</small>
+          <b id="femaleRemaining">1.289 kcal</b>
+        </div>
       </div>
 
       <div class="macros">
@@ -565,6 +606,8 @@
 
     const dailyTargets = {
       calories: 2000,
+      maleCalories: 2500,
+      femaleCalories: 2000,
       protein: 50,
       carbs: 300,
       fat: 70
@@ -578,6 +621,14 @@
 
     function dailyPercent(value, target) {
       return Math.round((value / target) * 100);
+    }
+
+    function remainingCalories(value, target) {
+      return Math.max(target - value, 0);
+    }
+
+    function formatCalories(value) {
+      return `${value.toLocaleString("de-DE")} kcal`;
     }
 
     function render() {
@@ -596,6 +647,8 @@
       $("protein").textContent = `${protein} g`;
       $("carbs").textContent = `${carbs} g`;
       $("fat").textContent = `${fat} g`;
+      $("maleRemaining").textContent = formatCalories(remainingCalories(totalCalories, dailyTargets.maleCalories));
+      $("femaleRemaining").textContent = formatCalories(remainingCalories(totalCalories, dailyTargets.femaleCalories));
 
       $("proteinDaily").textContent = `${dailyPercent(protein, dailyTargets.protein)} % des Tageswerts`;
       $("carbsDaily").textContent = `${dailyPercent(carbs, dailyTargets.carbs)} % des Tageswerts`;
