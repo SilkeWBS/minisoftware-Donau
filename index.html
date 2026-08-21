@@ -170,6 +170,74 @@
       margin-top: 12px;
     }
 
+    .ean-button {
+      margin-top: 12px;
+      border: 1px solid #a9c7b4;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .ean-result {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #e7f4ea;
+      color: #237754;
+      font-size: 13px;
+    }
+
+    .ean-scanner {
+      position: fixed;
+      z-index: 10;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: #18352de6;
+    }
+
+    .ean-scanner-panel {
+      width: min(520px, 100%);
+      overflow: hidden;
+      border-radius: 20px;
+      background: var(--ink);
+      color: #fff;
+      box-shadow: 0 20px 60px #0008;
+    }
+
+    .ean-scanner video {
+      display: block;
+      width: 100%;
+      max-height: 58vh;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .ean-scanner-copy {
+      padding: 16px 18px 18px;
+    }
+
+    .ean-scanner-copy b,
+    .ean-scanner-copy span {
+      display: block;
+    }
+
+    .ean-scanner-copy span {
+      margin-top: 6px;
+      color: #d8e7dc;
+      font-size: 13px;
+    }
+
+    .ean-close {
+      float: right;
+      border: 0;
+      border-radius: 8px;
+      padding: 7px 10px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
     .photo {
       height: 550px;
       border-radius: 18px;
@@ -518,6 +586,8 @@
         <p>Ziehe ein Foto hierher oder wähle es aus</p>
         <button class="btn">⇧ Foto auswählen</button>
         <span class="hint">JPG, PNG oder WEBP · max. 10 MB</span>
+        <button class="btn ean-button" id="eanScan" type="button">▥ EAN-Code scannen</button>
+        <div class="ean-result hide" id="eanResult">EAN erkannt: <b id="eanValue"></b></div>
       </div>
 
       <div class="photo hide" id="photo">
@@ -583,6 +653,17 @@
     </section>
   </main>
 
+  <section class="ean-scanner hide" id="eanScanner" aria-live="polite">
+    <div class="ean-scanner-panel">
+      <video id="eanVideo" playsinline muted></video>
+      <div class="ean-scanner-copy">
+        <button class="ean-close" id="eanClose" type="button">Schließen</button>
+        <b>EAN-Code scannen</b>
+        <span id="eanStatus">Halte den Barcode in die Kamera.</span>
+      </div>
+    </div>
+  </section>
+
   <section class="steps" id="steps">
     <div>
       <b>01 · Foto aufnehmen</b>
@@ -623,6 +704,8 @@
     const $ = id => document.getElementById(id);
     const input = $("file");
     const drop = $("drop");
+    let eanStream;
+    let eanScanTimer;
 
     function dailyPercent(value, target) {
       return Math.round((value / target) * 100);
@@ -712,6 +795,64 @@
       // Clearing the value also permits selecting the same image again.
       input.value = "";
       input.click();
+    };
+
+    function stopEanScanner() {
+      window.clearTimeout(eanScanTimer);
+      eanStream?.getTracks().forEach(track => track.stop());
+      eanStream = undefined;
+      $("eanVideo").srcObject = null;
+    }
+
+    async function detectEan(detector) {
+      if (!eanStream) {
+        return;
+      }
+
+      try {
+        const codes = await detector.detect($("eanVideo"));
+        const code = codes.find(item => item.rawValue);
+
+        if (code) {
+          $("eanValue").textContent = code.rawValue;
+          $("eanResult").classList.remove("hide");
+          stopEanScanner();
+          $("eanScanner").classList.add("hide");
+          return;
+        }
+      } catch (error) {
+        console.error("EAN-Code konnte nicht gelesen werden.", error);
+      }
+
+      eanScanTimer = window.setTimeout(() => detectEan(detector), 250);
+    }
+
+    async function startEanScanner(event) {
+      event.stopPropagation();
+      $("eanScanner").classList.remove("hide");
+
+      if (!("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) {
+        $("eanStatus").textContent = "Dieser Browser unterstuetzt den Kamerascanner nicht. Bitte nutze aktuelles Chrome auf Android.";
+        return;
+      }
+
+      try {
+        const detector = new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e"] });
+        eanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
+        $("eanVideo").srcObject = eanStream;
+        await $("eanVideo").play();
+        $("eanStatus").textContent = "Halte den Barcode ruhig und gut beleuchtet in die Kamera.";
+        detectEan(detector);
+      } catch (error) {
+        console.error("Kamera konnte nicht gestartet werden.", error);
+        $("eanStatus").textContent = "Kein Kamerazugriff. Bitte erlaube den Zugriff und versuche es erneut.";
+      }
+    }
+
+    $("eanScan").onclick = startEanScanner;
+    $("eanClose").onclick = () => {
+      stopEanScanner();
+      $("eanScanner").classList.add("hide");
     };
 
     if ("serviceWorker" in navigator) {
