@@ -523,7 +523,7 @@
       <div class="photo hide" id="photo">
         <img id="preview" alt="Hochgeladene Mahlzeit">
         <div class="scan" id="scan"><span>✦ Mahlzeit wird analysiert ...</span></div>
-        <button class="reset hide" id="reset">↻ Neues Foto</button>
+        <button class="reset hide" id="reset" type="button">↻ Neues Foto hochladen</button>
       </div>
 
       <input hidden id="file" type="file" accept="image/jpeg,image/png,image/webp">
@@ -676,6 +676,10 @@
         return;
       }
 
+      $("result").classList.add("hide");
+      $("app").classList.remove("done");
+      $("steps").classList.remove("hide");
+
       const reader = new FileReader();
       reader.onload = () => {
         $("preview").src = reader.result;
@@ -704,7 +708,11 @@
       load(event.dataTransfer.files[0]);
     };
     input.onchange = event => load(event.target.files[0]);
-    $("reset").onclick = () => location.reload();
+    $("reset").onclick = () => {
+      // Clearing the value also permits selecting the same image again.
+      input.value = "";
+      input.click();
+    };
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
