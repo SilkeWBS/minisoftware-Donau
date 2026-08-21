@@ -1,0 +1,87 @@
+name: Android-APK und Windows-EXE veroeffentlichen
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Android-APK bauen und Release anlegen
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Projekt herunterladen
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Java einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Bauwerkzeuge installieren
+        run: npm ci
+
+      - name: Web-App vorbereiten
+        run: npm run prepare:web
+
+      - name: Android-Projekt erzeugen und synchronisieren
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Installierbare APK bauen
+        run: ./gradlew assembleDebug
+        working-directory: android
+
+      - name: APK fuer das Release benennen
+        run: |
+          mkdir release
+          cp android/app/build/outputs/apk/debug/app-debug.apk release/minisoftware-Donau-v1.apk
+
+      - name: Oeffentliches Release mit APK erstellen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v1 > /dev/null 2>&1; then
+            gh release upload v1 release/minisoftware-Donau-v1.apk --clobber
+          else
+            gh release create v1 --title "minisoftware-Donau v1" --generate-notes release/minisoftware-Donau-v1.apk
+          fi
+
+  windows:
+    name: Portable Windows-EXE bauen und anfuegen
+    needs: android
+    runs-on: windows-latest
+
+    steps:
+      - name: Projekt herunterladen
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Bauwerkzeuge installieren
+        run: npm ci
+
+      - name: Web-App vorbereiten
+        run: npm run prepare:web
+
+      - name: Portable EXE bauen
+        run: npm run build:windows
+
+      - name: EXE an das Release anhaengen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload v1 release/minisoftware-Donau-v1.exe --clobber

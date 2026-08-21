@@ -1,2 +1,6 @@
 Bild*.webp
 kalorien-scanner.html
+node_modules/
+dist/
+release/
+android/

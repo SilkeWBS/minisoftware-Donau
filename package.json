@@ -1,0 +1,40 @@
+{
+  "name": "minisoftware-donau",
+  "version": "1.0.0",
+  "private": true,
+  "main": "electron/main.cjs",
+  "description": "Kalorien-Scanner als Android- und Windows-App.",
+  "scripts": {
+    "prepare:web": "node scripts/prepare-web.mjs",
+    "build:windows": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.4.3",
+    "@capacitor/core": "7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.4.3",
+    "electron": "35.0.0",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "de.silkewbs.minisoftwaredonau",
+    "productName": "Kalorien-Scanner",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**",
+      "dist/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ]
+    },
+    "portable": {
+      "artifactName": "minisoftware-Donau-v1.${ext}"
+    }
+  }
+}
